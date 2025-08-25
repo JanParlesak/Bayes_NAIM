@@ -41,6 +41,14 @@ class BayesLinear(nn.Module):
         def getSampledBias(self):
             return self.samples['bias']
         
+        def kl_div(self, mu_q, sigma_q, mu_p, sigma_p):
+            kl = torch.log(sigma_p) - sigma_q + (sigma_q**2 + (mu_q - mu_p)**2) / (2 *(sigma_p**2)) - 0.5
+            
+            return kl.mean()
+        
+        def kl_loss(self):
+            kl = self.kl_div(self.weights_mu, self.lweights_sigma, self.weight_prior_mu, self.weight_prior_sigma)
+        
         def forward(self, x):
             self.samples['weights'] = self.weights_mu + torch.exp(self.lweights_sigma) * torch.randn_like(self.lweights_sigma)
 
@@ -50,6 +58,7 @@ class BayesLinear(nn.Module):
             return F.linear(x, self.samples['weights'], self.samples['bias'] if self.bias else None)
         # add kl divergence loss 
 
+# KL divergence 
 
 
 
