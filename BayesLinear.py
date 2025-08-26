@@ -16,7 +16,7 @@ class BayesLinear(nn.Module):
         
         super(BayesLinear, self).__init__()
 
-        self.samples = {'weights' : None, 'bias' : None, 'wNoiseState' : None, 'bNoiseState' : None}
+        self.samples = {'weights' : None, 'bias' : None}
 
         self.in_features = in_features
         self.out_features = out_features
@@ -46,19 +46,24 @@ class BayesLinear(nn.Module):
             
             return kl.mean()
         
-        def kl_loss(self):
-            kl = self.kl_div(self.weights_mu, self.lweights_sigma, self.weight_prior_mu, self.weight_prior_sigma)
         
         def forward(self, x):
+            
             self.samples['weights'] = self.weights_mu + torch.exp(self.lweights_sigma) * torch.randn_like(self.lweights_sigma)
+            
+            kl = self.kl_div(self.weights_mu, self.lweights_sigma, self.weight_prior_mu, self.weight_prior_sigma)
+
+            if self.bias:
+                kl += self.kl_div(self.bias_mean. self.lbias_sigma, self.bias_prior_mu, self.bias_piror_sigma)
 
             if self.bias:
                 self.samples['bias'] = self.bias_mean + torch.exp(self.lbias_sigma) * torch.randn_like(self.lbias_sigma)
 
-            return F.linear(x, self.samples['weights'], self.samples['bias'] if self.bias else None)
-        # add kl divergence loss 
+            out = F.linear(x, self.samples['weights'], self.samples['bias'] if self.bias else None)
 
-# KL divergence 
+            return out, kl 
+        
+      
 
 
 
