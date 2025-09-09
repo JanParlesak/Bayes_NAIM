@@ -15,7 +15,10 @@ def validate(model, val_loader, loss_fun, n_samples):
     with torch.no_grad():
         for i, batch in enumerate(val_loader):
 
-            input, target = batch 
+            input, target = batch
+
+            target = target.to(device)
+            input = input.to(device)
 
             output = []
             kl_div = []
@@ -29,16 +32,15 @@ def validate(model, val_loader, loss_fun, n_samples):
             kl_loss = torch.mean(torch.stack(kl_div), dim = 0)
             log_lik_loss = loss_fun(mean_pred, target)
             loss = log_lik_loss + kl_loss
-            val_loss.append(loss)
+            val_loss.append(loss.cpu())
 
-        mean_loss = np.mean(np.array(val_loss))    
+        mean_loss = np.mean(np.array(val_loss))
 
-    return mean_loss 
-
-
+    return mean_loss
 
 
-def train(model, optimizer, loss_fun, trainset, valset, device, n_epochs, len_data, n_samples, print_mod = 1):
+
+def train(model, optimizer, loss_fun, trainset, device, n_epochs, batch_size, n_samples, print_mod = 1):
 
     loss_lis = []
     overall_loss = []
@@ -46,11 +48,9 @@ def train(model, optimizer, loss_fun, trainset, valset, device, n_epochs, len_da
 
     model = model.to(device)
 
-    N = len_data
-
     for epoch in range(n_epochs):
 
-        for iter, batch in enumerate(trainset):
+        for i, batch in enumerate(trainset):
 
             x, y = batch
             x = x.to(device)
@@ -59,22 +59,31 @@ def train(model, optimizer, loss_fun, trainset, valset, device, n_epochs, len_da
             output = []
             kl_div = []
 
-            for sample in range(n_samples):
+            for _ in range(n_samples):  #Not sure if sampling here is needed check that
                 out, kl = model(x)
                 output.append(out)
                 kl_div.append(kl)
 
-            
+            # out, kl = model(x)
+
+
             mean_pred = torch.mean(torch.stack(output), dim = 0)
             kl_loss = torch.mean(torch.stack(kl_div), dim = 0)
 
+            #print(kl_loss)
+
             loss = loss_fun(mean_pred, y)
-            loss += kl_loss #ELBO Loss add if loos_fun is negative log_likelihood
+            scaled_kl = kl_loss/batch_size
+            loss += scaled_kl  #ELBO Loss add if loos_fun is negative log_likelihood
+
+            #loss = loss_fun(out, y)
+            #loss += kl * 0.1     # Why does this improve training so much? kl / batch_size and add sampling again
+
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            
+
             loss_lis.append(loss.cpu().detach())
 
         if epoch % print_mod == 0:
@@ -83,46 +92,48 @@ def train(model, optimizer, loss_fun, trainset, valset, device, n_epochs, len_da
             overall_loss += mean_loss
             loss_lis = []
 
-            validation_loss = validate(model, valset, loss_fun, n_samples)
+            #validation_loss = validate(model, valset, loss_fun, n_samples)
 
-            val_loss.append(validation_loss)
+            #val_loss.append(validation_loss)
 
 
-            print(f'Epoch nr {epoch}: mean_train_loss = {mean_loss}, , validation_loss =  {validation_loss}')
+            print(f'Epoch nr {epoch}: mean_train_loss = {mean_loss}')
+            #, , validation_loss =  {validation_loss}')
 
-    return overall_loss, val_loss
+    return overall_loss
 
 
 
 
 def sample(model, n_samples, testloader):
 
-    model.eval()
-    output_list = []
-    target_list = []
+  model.eval()
+  mean_pred_list = []
+  std_list = []
 
-    with torch.no_grad():
+  with torch.no_grad():
 
-        for data, target in testloader:
+    for i, batch in enumerate(testloader):
 
-            output_mc = []
+      output_mc = []
 
-            for sample in range(n_samples):
-                out, _ = model.forward(data)
-                output_mc.append(out)
+      data, target = batch
 
-            output = torch.stack(output_mc)
-            output_list.append(output)
-            target_list.append(target)
-        
-        mean_pred = torch.mean(torch.stack(output_list), dim = 0)
-        std = torch.sqrt(torch.var(torch.stack(output_list), dim = 0))
+      data = data.to(device)
+      target = target.to(device)
 
-    return mean_pred, std
-        
+      for _ in range(n_samples):
+        out, _ = model.forward(data)
+        output_mc.append(out)
 
- # check this    
+      output = torch.stack(output_mc)
 
+      mean_pred_batch = torch.mean(output, dim = 0)
+      std_batch = torch.sqrt(torch.var(output, dim = 0))
+      mean_pred_list.append(mean_pred_batch)
+      std_list.append(std_batch)
+
+  return mean_pred_list, std_list
 
 
 

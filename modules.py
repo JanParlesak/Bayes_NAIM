@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 from . import BayesLinear
 
-
 class Model(nn.Module):
   def __init__(self, in_features, out_features):
     super(Model, self).__init__()
