@@ -1,6 +1,7 @@
 import torch 
 import torch.nn as nn
 import torch.nn.functional as F
+import math 
 from torch.nn import Parameter
 
 class BayesLinear(nn.Module):
