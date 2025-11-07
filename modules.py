@@ -2,30 +2,6 @@ import torch
 import torch.nn as nn
 from . import BayesLinear
 
-class Model(nn.Module):
-  def __init__(self, in_features, out_features):
-    super(Model, self).__init__()
-
-    self.layer1 = BayesLinear(in_features = in_features, out_features=100)
-    self.activation = nn.ReLU()
-    self.layer2 = BayesLinear(in_features=100, out_features= out_features)
-
-  def forward(self, x):
-
-    kl_sum = 0
-
-    out, kl = self.layer1(x)
-    kl_sum += kl
-    out = self.activation(out)
-
-    out, kl = self.layer2(out)
-
-    kl_sum += kl
-
-    return out, kl_sum
-
-
-
 class BayesFeature(nn.Module):
   def __init__(self, hid_dim=[], dropout_rate = 0.0, prior_scale= .1, activation_function = nn.LeakyReLU()):
     super(BayesFeature, self).__init__()
@@ -58,8 +34,6 @@ class BayesFeature(nn.Module):
     kl_sum += kl
 
     return out, kl_sum
-  
-
 
 class BayesNAM(nn.Module):
   def __init__(self,
@@ -122,25 +96,30 @@ class BayesNAM(nn.Module):
       kl_total += kl
       output_lis.append(ri)
 
-    #self.samples['bias'] = self.bias_mean + torch.exp(self.lbias_sigma) * torch.randn_like(self.lbias_sigma)
-    #kl_total += self.kl_div(self.bias_mean, self.lbias_sigma, self.bias_prior_mu, self.bias_prior_sigma)
 
+    self.samples['bias'] = self.bias_mean + torch.exp(self.lbias_sigma) * torch.randn_like(self.lbias_sigma)
+    kl_total += self.kl_div(self.bias_mean, self.lbias_sigma, self.bias_prior_mu, self.bias_prior_sigma)
 
-    conc_out = torch.cat(output_lis, dim=-1)
-    dropout_out = self.feature_dropout(conc_out)
-    out = torch.sum(dropout_out, dim=-1) + self.bias #+ self.samples['bias']
+    if self.return_output_lis:
+      return output_lis, kl_total
 
+    else:
+      conc_out = torch.cat(output_lis, dim=-1)
+      dropout_out = self.feature_dropout(conc_out)
+      out = torch.sum(dropout_out, dim=-1) + self.bias  #+ self.samples['bias'] #
 
-    return out, kl_total
+      #out = out_1 + out_2 + out_3 + self.bias
+
+      return out, kl_total
     
 
-class BayesSkipBlock(nn.module):
-   def __init__(self, in_features, out_features, prior_scale = 0.1):
+class BayesSkipBlock(nn.Module):
+  def __init__(self, in_features, out_features, prior_scale = 0.1):
     super(BayesSkipBlock, self).__init__()
 
 
-    self.linear_in = BayesLinear(in_features = in_features, out_features = 100, weight_prior_sigma = prior_scale)
-    self.linear_out = BayesLinear(in_features = 100, out_features = out_features, weight_prior_sigma = prior_scale)
+    self.linear_in = BayesLinear(in_features = in_features, out_features = in_features, weight_prior_sigma = prior_scale)
+    self.linear_out = BayesLinear(in_features = in_features, out_features = in_features, weight_prior_sigma = prior_scale)
 
     self.act = torch.nn.LeakyReLU()
 
@@ -148,7 +127,7 @@ class BayesSkipBlock(nn.module):
     self.bn2 = nn.BatchNorm1d(out_features, affine = True)
 
 
-   def forward(self, x):
+  def forward(self, x):
 
     kl_sum = 0
     x0 = x
@@ -167,23 +146,23 @@ class BayesSkipBlock(nn.module):
     x = self.act(x)
 
     return x, kl_sum
-   
+
 
 
 
 class BayesResFeature(nn.Module):
-  def __init__(self, hid_dim=[50,100,100,50], dropout_rate = 0.0, prior_scale= .1, activation_function = nn.LeakyReLU()):
+  def __init__(self, n_input, hid_dim=[100,100,100,100], dropout_rate = 0.0, prior_scale= .1, activation_function = nn.LeakyReLU()):
     super(BayesResFeature, self).__init__()
 
     self.activation = activation_function
 
-    self.input_layer = BayesLinear(1, hid_dim[0])
+    self.input_layer = BayesLinear(n_input, hid_dim[0])
 
     self.layers = nn.ModuleList([
-        BayesSkipBlock(hid_dim[idx], hid_dim[idx], weight_prior_sigma = prior_scale) for idx in
+        BayesSkipBlock(hid_dim[0], hid_dim[0], prior_scale = prior_scale) for idx in
                       range(1, len(hid_dim))])
-    
-    self.output_layer = BayesLinear(hid_dim[-1], 1)
+
+    self.output_layer = BayesLinear(hid_dim[0], 1)
 
     self.dropout = torch.nn.Dropout(p = dropout_rate)
 
@@ -207,9 +186,6 @@ class BayesResFeature(nn.Module):
     kl_sum += kl
 
     return out, kl_sum
-  
-
-
 
 
 class BayesRes(nn.Module):
@@ -283,3 +259,41 @@ class BayesRes(nn.Module):
 
 
     return out, kl_total
+  
+class BayesImageNAM(torch.nn.Module):
+  def __init__(self,
+                pretrained_encoder,
+                bayes_mlp, #BayesResFeature
+                bayes_feat_nam,
+                ):
+      super().__init__()
+
+      self.pretrained_encoder = pretrained_encoder
+      self.bayes_mlp = bayes_mlp
+      self.bayes_feat_nam = bayes_feat_nam
+      self.bayes_feat_nam.return_output_lis = True
+
+  def forward(self, image, features):
+
+    total_kl = 0
+
+    output_lis_nam, kl = self.bayes_feat_nam(features)
+
+    total_kl += kl
+
+    res_cnn = self.pretrained_encoder.encode(image)
+    res_cnn, kl = self.bayes_mlp(res_cnn)
+
+    total_kl += kl
+
+    output_lis = output_lis_nam + [res_cnn]
+    output_lis = torch.cat(output_lis, dim=-1)
+
+    output_lis = self.bayes_feat_nam.feature_dropout(output_lis)
+    out = torch.sum(output_lis, dim=-1) + self.bayes_feat_nam.bias
+    return out, total_kl
+  
+
+
+
+
