@@ -1,78 +1,53 @@
-import json
-import os
-from copy import deepcopy
-from dataclasses import dataclass
+
+from experiment import * 
 
 
-@dataclass
-class BaseConfig:
-    def clone(self):
-        return deepcopy(self)
-
-    def inherit(self, another):
-        """inherit common keys from a given config"""
-        common_keys = set(self.__dict__.keys()) & set(another.__dict__.keys())
-        for k in common_keys:
-            setattr(self, k, getattr(another, k))
-
-    def propagate(self):
-        """push down the configuration to all members"""
-        for k, v in self.__dict__.items():
-            if isinstance(v, BaseConfig):
-                v.inherit(self)
-                v.propagate()
-
-    def save(self, save_path):
-        """save config to json file"""
-        dirname = os.path.dirname(save_path)
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)
-        conf = self.as_dict_jsonable()
-        with open(save_path, 'w') as f:
-            json.dump(conf, f)
-
-    def load(self, load_path):
-        """load json config"""
-        with open(load_path) as f:
-            conf = json.load(f)
-        self.from_dict(conf)
-
-    def from_dict(self, dict, strict=False):
-        for k, v in dict.items():
-            if not hasattr(self, k):
-                if strict:
-                    raise ValueError(f"loading extra '{k}'")
-                else:
-                    print(f"loading extra '{k}'")
-                    continue
-            if isinstance(self.__dict__[k], BaseConfig):
-                self.__dict__[k].from_dict(v)
-            else:
-                self.__dict__[k] = v
-
-    def as_dict_jsonable(self):
-        conf = {}
-        for k, v in self.__dict__.items():
-            if isinstance(v, BaseConfig):
-                conf[k] = v.as_dict_jsonable()
-            else:
-                if jsonable(v):
-                    conf[k] = v
-                else:
-                    # ignore not jsonable
-                    pass
-        return conf
+config = {
+    "mode": 'classification',
+    "dropout_rate": tune.choice([2, 4, 8, 16]),
+    "feature_dropout_rate": tune.choice([2, 4, 8, 16]),
+    "batch_size": tune.choice([2, 4, 8, 16]),
+    "prior_scale" : 0.1,
+    "learning_rate": tune.choice([2, 4, 8, 16]),
+    "n_epochs" : 1000,
+    "n_samples": 1,
+    "n_post_samples": 10,
+    "kl_weight" : 0.01,
+    "num_trials": 10,
+    "device": "cuda" if torch.cuda.is_available() else "cpu",
+}
 
 
-def jsonable(x):
-    try:
-        json.dumps(x)
-        return True
-    except TypeError:
-        return False
+def main(config, gpus_per_trial=1):
+    scheduler = ASHAScheduler(
+        time_attr="training_iteration",
+        max_t=config["max_num_epochs"],
+        grace_period=1,
+        reduction_factor=2)
+    
+    tuner = tune.Tuner(
+        tune.with_resources(
+            tune.with_parameters(train_bnaim),
+            resources={"cpu": 1, "gpu": gpus_per_trial}
+        ),
+        tune_config=tune.TuneConfig(
+            metric="AUC_PR",
+            mode="max",
+            scheduler=scheduler,
+            num_samples=config["num_trials"],
+        ),
+        param_space=config,
+    )
+    results = tuner.fit()
+    
+    best_result = results.get_best_result("AUC_PR", "max")
+
+    print(f"Best trial config: {best_result.config}")
+    print(f"Best AUC_PR: {best_result.metrics['AUC_PR']}, Best AUC: {best_result.metrics['AUC']}, Best Accuracy: {best_result.metrics['Balanced Accuracy']}, Best Recall: {best_result.metrics['val_recall']}, Best Precision: {best_result.metrics['val_precision']}")
+
+    get_test_predictions(best_result)
+
     
 
-class ConfigTrain(BaseConfig): 
-    seed: int = 0
-    train_mode = mode 
-    n_features, hidden_units, dropout_rate, feature_dropout_rate, batch_size, prior_scale, learning_rate, device, n_epochs, n_samples, n_post_samples
+main(config, gpus_per_trial=1 if torch.cuda.is_available() else 0)
+

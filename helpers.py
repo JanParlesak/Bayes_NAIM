@@ -6,6 +6,7 @@ import os
 from skimage import io, transform
 import os.path as osp
 import seaborn as sns
+from modules import *
 
 from diffae_med import templates
 
@@ -45,6 +46,25 @@ def load_encoder(device):
    pretrained_encoder.load_state_dict(state['state_dict'], strict=False)
    
    return pretrained_encoder
+
+def make_model(config, n_features):
+    
+    if config["name"] == "bnaim":
+
+      device = config["device"]
+      mode = config["mode"]
+      
+      pretrained_encoder = load_encoder(device=device)
+      pretrained_encoder.ema_model.eval()
+      pretrained_encoder.ema_model.to(device)
+
+      bayes_mlp = BayesResFeature(n_input = 512, hid_dim = [500,500,500,500]) 
+      bayes_nam = BayesNAM(n_features = n_features, hidden_units = [100, 100, 100], dropout_rate = config["dropout_rate"], feature_dropout_rate = config["feature_dropout_rate"],
+                            prior_scale = config["prior_scale"])
+
+      model = BayesImageNAM(pretrained_encoder = pretrained_encoder, bayes_mlp = bayes_mlp, bayes_nam = bayes_nam)
+
+    return model
 
 
 
