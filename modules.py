@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch.nn import Parameter
 import math
-from . import BayesLinear
+from BayesLinear import BayesLinear
 
 class BayesFeature(nn.Module):
   def __init__(self, hid_dim=[], dropout_rate = 0.0, prior_scale= .1, activation_function = nn.LeakyReLU()):
@@ -296,5 +296,90 @@ class BayesImageNAM(torch.nn.Module):
     return out, total_kl
 
 
+##NAM from reuter
 
+class FeatureNN(torch.nn.Module):
+    def __init__(self,
+                 shallow_units: int,   # number of neurons in first layer
+                 hidden_units = [],  # tuple of numbers of hidden units
+                 activation = torch.nn.ReLU(),
+                 dropout: float = .5,
+                 ):
+        super().__init__()
+
+        # Define Layers
+        self.layers = torch.nn.ModuleList([
+            torch.nn.Linear(shallow_units if i == 0 else hidden_units[i - 1], hidden_units[i])
+            for i in range(len(hidden_units))
+        ])
+
+        self.layers.insert(0, torch.nn.Linear(1, shallow_units))
+        self.output_layer = torch.nn.Linear(hidden_units[-1], 1)
+
+        # Dropout and activation
+        self.dropout = torch.nn.Dropout(p=dropout)
+        self.activation = activation
+
+
+    def forward(self, x):
+        for i, layer in enumerate(self.layers):
+            x = layer(x)
+            x = self.activation(x)
+            x = self.dropout(x)
+        x = self.output_layer(x)
+        return x
+
+
+class NAM(torch.nn.Module):
+  def __init__(self,
+                n_features,
+                shallow_units: int,   # number of neurons in first layer
+                hidden_units = [],  # tuple of numbers of hidden units
+                activation = torch.nn.ReLU(),
+                dropout: float = .5,
+                feature_dropout = 0.0,
+                return_output_lis = False
+                ):
+      super().__init__()
+
+      self.shallow_units = shallow_units
+      self.hidden_units = hidden_units
+      self.activation = activation
+      self.dropout = dropout
+
+      self.n_features = n_features
+      self.feature_dropout_rate = feature_dropout
+      self.return_output_lis = return_output_lis
+
+      self.feature_nns = torch.nn.ModuleList([
+            FeatureNN(shallow_units=shallow_units,
+                      hidden_units=hidden_units,
+                      activation=activation,
+                      dropout=dropout)
+            for i in range(n_features)
+        ])
+
+      self.bias = torch.nn.Parameter(torch.zeros(1))
+      self.feature_dropout = torch.nn.Dropout(p=self.feature_dropout_rate)
+
+  def forward(self, f):
+    eta = self.bias
+    output_lis = []
+    for feature, mod in zip(f.T, self.feature_nns):
+      feature = feature.unsqueeze(-1)
+      ri = mod(feature)
+      output_lis.append(ri)
+
+    if self.return_output_lis:
+      return output_lis
+
+    else:
+       conc_out = torch.cat(output_lis, dim=-1)
+       dropout_out = self.feature_dropout(conc_out)
+       out = torch.sum(dropout_out, dim=-1) + self.bias
+
+       return out
+    
+
+  
 

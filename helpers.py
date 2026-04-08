@@ -1,3 +1,6 @@
+import sys
+sys.path.append("diffae_med")
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -8,7 +11,8 @@ import os.path as osp
 import seaborn as sns
 from modules import *
 
-from diffae_med import templates
+from diffae_med.templates import cxr128_autoenc_130M
+from diffae_med.experiment import LitModel
 
 goeblue = '#153268'
 midblue = '#0093c7'
@@ -42,7 +46,7 @@ def load_encoder(device):
    conf = cxr128_autoenc_130M()
    # print(conf.name)
    pretrained_encoder = LitModel(conf)
-   state = torch.load(f'diffae/checkpoints/{conf.name}/last.ckpt', map_location='cpu', weights_only=False)
+   state = torch.load(f'/user/jan.parlesak/u24266/repos/Bayes_Image_NAM/diffae_med/checkpoints/{conf.name}/last.ckpt', map_location='cpu', weights_only=False)
    pretrained_encoder.load_state_dict(state['state_dict'], strict=False)
    
    return pretrained_encoder
@@ -62,7 +66,15 @@ def make_model(config, n_features):
       bayes_nam = BayesNAM(n_features = n_features, hidden_units = [100, 100, 100], dropout_rate = config["dropout_rate"], feature_dropout_rate = config["feature_dropout_rate"],
                             prior_scale = config["prior_scale"])
 
-      model = BayesImageNAM(pretrained_encoder = pretrained_encoder, bayes_mlp = bayes_mlp, bayes_nam = bayes_nam)
+      model = BayesImageNAM(pretrained_encoder = pretrained_encoder, bayes_mlp = bayes_mlp, bayes_feat_nam = bayes_nam)
+
+    elif config["name"] == "bnam":
+
+      model = BayesNAM(n_features = n_features, hidden_units = [100, 100, 100], dropout_rate= config["dropout_rate"], feature_dropout_rate = config["feature_dropout_rate"], prior_scale = config["prior_scale"])
+    
+    elif config["name"] == "nam":
+
+      model = NAM(n_features=n_features, shallow_units=20, hidden_units=(100, 100, 100), activation= torch.nn.ReLU(), dropout= config["dropout_rate"], feature_dropout = config["feature_dropout_rate"])
 
     return model
 

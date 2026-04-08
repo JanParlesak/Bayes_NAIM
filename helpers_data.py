@@ -35,15 +35,15 @@ class CustomPipeline(Pipeline):
 
 def load_cxr_data(target_column):
   
-  df = pd.read_csv('')
+  df = pd.read_csv('/user/jan.parlesak/u24266/repos/Bayes_Image_NAM/data/datasets/patient_data_raw.csv')
 
   cols = ["to_patient_id", "age.splits", "gender_concept_name", "smoking_status_v","39156-5_Body mass index (BMI) [Ratio]", "htn_v", "dm_v", "ckd_v","other_lung_disease_v", "malignancies_v", "76282-3_Heart rate.beat-to-beat by EKG",
           "8480-6_Systolic blood pressure", "9279-1_Respiratory rate", "59408-5_Oxygen saturation in Arterial blood by Pulse oximetry",
-          "33256-9_Leukocytes [#/volume] corrected for nucleated erythrocytes in Blood by Automated count", "2823-3_Potassium [Moles/volume] in Serum or Plasma",
-          "2524-7_Lactate [Moles/volume] in Serum or Plasma", "1988-5_C reactive protein [Mass/volume] in Serum or Plasma", "2160-0_Creatinine [Mass/volume] in Serum or Plasma",
-          "2951-2_Sodium [Moles/volume] in Serum or Plasma", "48058-2_Fibrin D-dimer DDU [Mass/volume] in Platelet poor plasma by Immunoassay"] + [target_column]
+          "2823-3_Potassium [Moles/volume] in Serum or Plasma", "2524-7_Lactate [Moles/volume] in Serum or Plasma", "1988-5_C reactive protein [Mass/volume] in Serum or Plasma", 
+          "2951-2_Sodium [Moles/volume] in Serum or Plasma"] + [target_column]
 
   df = df[cols]
+  
   df["smoking_status_v"] = df["smoking_status_v"].astype(str)
   df["smoking_status_v"] = np.where((df["smoking_status_v"]=='Current') | (df["smoking_status_v"]=='Former'), 1.0, 0.0)
   df["htn_v"] = df["htn_v"].astype(str)
@@ -62,22 +62,33 @@ def load_cxr_data(target_column):
   df['8480-6_Systolic blood pressure'] = df['8480-6_Systolic blood pressure'].fillna(df['8480-6_Systolic blood pressure'].mode()[0])
   df['9279-1_Respiratory rate'] = df['9279-1_Respiratory rate'].fillna(df['9279-1_Respiratory rate'].mode()[0])
   df['59408-5_Oxygen saturation in Arterial blood by Pulse oximetry'] = df['59408-5_Oxygen saturation in Arterial blood by Pulse oximetry'].fillna(df['59408-5_Oxygen saturation in Arterial blood by Pulse oximetry'].mode()[0])
-  df['33256-9_Leukocytes [#/volume] corrected for nucleated erythrocytes in Blood by Automated count'] = df['33256-9_Leukocytes [#/volume] corrected for nucleated erythrocytes in Blood by Automated count'].fillna(df['33256-9_Leukocytes [#/volume] corrected for nucleated erythrocytes in Blood by Automated count'].mode()[0])
+  #df['33256-9_Leukocytes [#/volume] corrected for nucleated erythrocytes in Blood by Automated count'] = df['33256-9_Leukocytes [#/volume] corrected for nucleated erythrocytes in Blood by Automated count'].fillna(df['33256-9_Leukocytes [#/volume] corrected for nucleated erythrocytes in Blood by Automated count'].mode()[0])
   df['2823-3_Potassium [Moles/volume] in Serum or Plasma'] = df['2823-3_Potassium [Moles/volume] in Serum or Plasma'].fillna(df['2823-3_Potassium [Moles/volume] in Serum or Plasma'].mode()[0])
   df['2524-7_Lactate [Moles/volume] in Serum or Plasma'] = df['2524-7_Lactate [Moles/volume] in Serum or Plasma'].fillna(df['2524-7_Lactate [Moles/volume] in Serum or Plasma'].mode()[0])
   df['1988-5_C reactive protein [Mass/volume] in Serum or Plasma'] = df['1988-5_C reactive protein [Mass/volume] in Serum or Plasma'].fillna(df['1988-5_C reactive protein [Mass/volume] in Serum or Plasma'].mode()[0])
-  df['2160-0_Creatinine [Mass/volume] in Serum or Plasma'] = df['2160-0_Creatinine [Mass/volume] in Serum or Plasma'].fillna(df['2160-0_Creatinine [Mass/volume] in Serum or Plasma'].mode()[0])
+  #df['2160-0_Creatinine [Mass/volume] in Serum or Plasma'] = df['2160-0_Creatinine [Mass/volume] in Serum or Plasma'].fillna(df['2160-0_Creatinine [Mass/volume] in Serum or Plasma'].mode()[0])
   df['2951-2_Sodium [Moles/volume] in Serum or Plasma'] = df['2951-2_Sodium [Moles/volume] in Serum or Plasma'].fillna(df['2951-2_Sodium [Moles/volume] in Serum or Plasma'].mode()[0])
-  df['48058-2_Fibrin D-dimer DDU [Mass/volume] in Platelet poor plasma by Immunoassay'] = df['48058-2_Fibrin D-dimer DDU [Mass/volume] in Platelet poor plasma by Immunoassay'].fillna(df['48058-2_Fibrin D-dimer DDU [Mass/volume] in Platelet poor plasma by Immunoassay'].mode()[0])
+  #df['48058-2_Fibrin D-dimer DDU [Mass/volume] in Platelet poor plasma by Immunoassay'] = df['48058-2_Fibrin D-dimer DDU [Mass/volume] in Platelet poor plasma by Immunoassay'].fillna(df['48058-2_Fibrin D-dimer DDU [Mass/volume] in Platelet poor plasma by Immunoassay'].mode()[0])
   #df['3094-0_Urea nitrogen [Mass/volume] in Serum or Plasma'] = df['3094-0_Urea nitrogen [Mass/volume] in Serum or Plasma'].fillna(df['3094-0_Urea nitrogen [Mass/volume] in Serum or Plasma'].mode()[0])
   #df['1920-8_Aspartate aminotransferase [Enzymatic activity/volume] in Serum or Plasma'] = df['1920-8_Aspartate aminotransferase [Enzymatic activity/volume] in Serum or Plasma'].fillna(df['1920-8_Aspartate aminotransferase [Enzymatic activity/volume] in Serum or Plasma'].mode()[0])
 
 
+  if target_column == "last.status":
+    df[target_column] = df[target_column].astype(str)
+    df[target_column] = np.where(df[target_column]== "deceased", 1.0, 0.0)
 
-  df[target_column] = df[target_column].astype(str)
-  df[target_column] = np.where(df[target_column]== "deceased", 1.0, 0.0)
+  elif target_column == "was_ventilated":
+    df[target_column] = df[target_column].astype(str)
+    df[target_column] = np.where(df[target_column]== "Yes", 1.0, 0.0)
+
+  elif target_column == "is_icu":
+    df[target_column] = df[target_column].astype(str)
+    df[target_column] = np.where(df[target_column]== "True", 1.0, 0.0)
 
   df = df.dropna()
+
+  df["gender_concept_name"] = df["gender_concept_name"].astype(str)
+  df["gender_concept_name"] = np.where((df["gender_concept_name"]=='FEMALE'), 1.0, 0.0)
 
   return df
 
@@ -98,13 +109,10 @@ def preprocess_data_cxr(root_dir, target_column):
     if os.path.exists(img_name):
       image_dirs.append(img_name)
 
-      if i == 3:
-        print(img_name)
     else:
       no_path.append(i)
 
   features_frame = features_frame.drop(no_path)
-  print(features_frame.shape)
 
   features_frame = features_frame.drop("to_patient_id", axis = 1)
 
@@ -123,12 +131,9 @@ def preprocess_data_cxr(root_dir, target_column):
 
   column_names = features_frame.columns
   new_column_names = []
-  print(column_names)
   is_categorical = np.array([dt.kind == 'O' for dt in features_frame.dtypes])
   categorical_cols = features_frame.columns.values[is_categorical]
-  print(categorical_cols)
   numerical_cols = features_frame.columns.values[~is_categorical]
-  print(numerical_cols)
 
   for index, is_cat in enumerate(is_categorical):
     col_name = column_names[index]
@@ -155,8 +160,6 @@ def preprocess_data_cxr(root_dir, target_column):
                          ('min_max', MinMaxScaler((-1, 1))), ('dummy', None)])
   df = pipe.apply_transformation(features_frame)
 
-  print(df.shape)
-
 
   return image_dirs, df.astype('float32'), targets.astype('float32'), col_min_max, new_column_names
 
@@ -175,7 +178,7 @@ transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
 
 
-def load_cxr_data_img(target_column, train_frac, val_frac, batch_size):
+def dataloaders_img(target_column, train_frac, val_frac, batch_size):
   
   transforms_train = torchvision.transforms.Compose([
     torchvision.transforms.ToTensor(),
@@ -189,7 +192,7 @@ def load_cxr_data_img(target_column, train_frac, val_frac, batch_size):
   transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
   ])
   
-  imgs_dir, features, targets, col_min_max, new_col_names = preprocess_data_cxr(root_dir= '//content/drive/MyDrive/bayesNAIM/cxr_images_ny/',
+  imgs_dir, features, targets, col_min_max, new_col_names = preprocess_data_cxr(root_dir= '/user/jan.parlesak/u24266/repos/Bayes_Image_NAM/data/images/cxr_images_ny',
                           target_column= target_column)
   
 
@@ -207,9 +210,9 @@ def load_cxr_data_img(target_column, train_frac, val_frac, batch_size):
   return train_loader_img, val_loader_img, test_loader_img, features
   
   
-def load_cxr_data(target_column, train_frac, val_frac, batch_size):
+def dataloaders(target_column, train_frac, val_frac, batch_size):
   
-  imgs_dir, features, targets, col_min_max, new_col_names = preprocess_data_cxr(root_dir= '//content/drive/MyDrive/bayesNAIM/cxr_images_ny/',
+  imgs_dir, features, targets, col_min_max, new_col_names = preprocess_data_cxr(root_dir= '/user/jan.parlesak/u24266/repos/Bayes_Image_NAM/data/images/cxr_images_ny',
                           target_column= target_column)
   
   train_loader, val_loader, test_loader = train_test_split_features(features = torch.tensor(features),
@@ -217,6 +220,7 @@ def load_cxr_data(target_column, train_frac, val_frac, batch_size):
                                                          train_frac = train_frac,
                                                          val_frac = val_frac,
                                                          batch_size = batch_size)
+  return train_loader, val_loader, test_loader, features
 
 
 
