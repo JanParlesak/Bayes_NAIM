@@ -46,7 +46,7 @@ def load_encoder(device):
    conf = cxr128_autoenc_130M()
    # print(conf.name)
    pretrained_encoder = LitModel(conf)
-   state = torch.load(f'/user/jan.parlesak/u24266/repos/Bayes_Image_NAM/diffae_med/checkpoints/{conf.name}/last.ckpt', map_location='cpu', weights_only=False)
+   state = torch.load(f'//content/drive/MyDrive/bayesNAIM/last.ckpt', map_location='cpu', weights_only=False)
    pretrained_encoder.load_state_dict(state['state_dict'], strict=False)
    
    return pretrained_encoder
