@@ -33,9 +33,9 @@ class CustomPipeline(Pipeline):
     return xt
 
 
-def load_cxr_data(target_column):
-  
-  df = pd.read_csv('/user/jan.parlesak/u24266/repos/Bayes_Image_NAM/data/datasets/patient_data_raw.csv')
+def load_cxr_data(target_column, data_dir):
+  #change this to data/
+  df = pd.read_csv(data_dir)
 
   cols = ["to_patient_id", "age.splits", "gender_concept_name", "smoking_status_v","39156-5_Body mass index (BMI) [Ratio]", "htn_v", "dm_v", "ckd_v","other_lung_disease_v", "malignancies_v", "76282-3_Heart rate.beat-to-beat by EKG",
           "8480-6_Systolic blood pressure", "9279-1_Respiratory rate", "59408-5_Oxygen saturation in Arterial blood by Pulse oximetry",
@@ -93,9 +93,9 @@ def load_cxr_data(target_column):
   return df
 
 
-def preprocess_data_cxr(root_dir, target_column):
+def preprocess_data_cxr(root_dir, data_dir, target_column):
 
-  features_frame = load_cxr_data(target_column)
+  features_frame = load_cxr_data(target_column, data_dir)
   features_frame = features_frame.sample(frac=1, random_state = 1).reset_index(drop=True)
 
 
@@ -178,7 +178,7 @@ transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
 
 
-def dataloaders_img(target_column, train_frac, val_frac, batch_size):
+def dataloaders_img(target_column, train_frac, val_frac, batch_size, root_dir, data_dir):
   
   transforms_train = torchvision.transforms.Compose([
     torchvision.transforms.ToTensor(),
@@ -192,7 +192,7 @@ def dataloaders_img(target_column, train_frac, val_frac, batch_size):
   transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
   ])
   
-  imgs_dir, features, targets, col_min_max, new_col_names = preprocess_data_cxr(root_dir= '/user/jan.parlesak/u24266/repos/Bayes_Image_NAM/data/images/cxr_images_ny',
+  imgs_dir, features, targets, col_min_max, new_col_names = preprocess_data_cxr(root_dir= root_dir, data_dir= data_dir,
                           target_column= target_column)
   
 
@@ -210,9 +210,9 @@ def dataloaders_img(target_column, train_frac, val_frac, batch_size):
   return train_loader_img, val_loader_img, test_loader_img, features
   
   
-def dataloaders(target_column, train_frac, val_frac, batch_size):
+def dataloaders(target_column, train_frac, val_frac, batch_size, root_dir, data_dir):
   
-  imgs_dir, features, targets, col_min_max, new_col_names = preprocess_data_cxr(root_dir= '/user/jan.parlesak/u24266/repos/Bayes_Image_NAM/data/images/cxr_images_ny',
+  imgs_dir, features, targets, col_min_max, new_col_names = preprocess_data_cxr(root_dir= root_dir, data_dir=data_dir,
                           target_column= target_column)
   
   train_loader, val_loader, test_loader = train_test_split_features(features = torch.tensor(features),

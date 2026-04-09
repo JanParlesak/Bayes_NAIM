@@ -88,11 +88,15 @@ def validate_nam(model, device, mode, val_loader, loss_fun, batch_size):
 
 def train_nam(config):
     
+    root_dir = ''
+    data_dir = ''
+    
     device = config["device"]
     mode = config["mode"]
     target = config["target"]
 
-    trainset, valset, _ , features = dataloaders(target_column = target, train_frac = 0.7, val_frac = 0.2, batch_size = config["batch_size"])
+    trainset, valset, _ , features = dataloaders(target_column = target, train_frac = 0.7, val_frac = 0.2, batch_size = config["batch_size"],
+                                                 root_dir=root_dir, data_dir=data_dir)
 
     model = make_model(config, features.shape[-1])
 
@@ -257,11 +261,15 @@ def validate_bnam(model, device, mode, val_loader, loss_fun, kl_weight, batch_si
 
 def train_bnam(config):
     
+    root_dir = '' 
+    data_dir = ''
+    
     device = config["device"]
     mode = config["mode"]
     target = config["target"]
   
-    trainset, valset, _ , features = dataloaders(target_column = target, train_frac = 0.7, val_frac = 0.2, batch_size = config["batch_size"])
+    trainset, valset, _ , features = dataloaders(target_column = target, train_frac = 0.7, val_frac = 0.2, batch_size = config["batch_size"],
+                                                 root_dir=root_dir, data_dir=data_dir)
 
     model = make_model(config, features.shape[-1])
 
@@ -444,13 +452,15 @@ def validate_bnaim(model, device, mode, val_loader, loss_fun, kl_weight, batch_s
 
 def train_bnaim(config):
 
-    results_dir = "/user/jan.parlesak/u24266/repos/Bayes_Image_NAM/test_results"
+    root_dir = '' #change this to standard data folder
+    data_dir = ''
 
     device = config["device"]
     mode = config["mode"]
     target = config["target"]
   
-    trainset, valset, _ , features = dataloaders_img(target_column = target, train_frac = 0.7, val_frac = 0.2, batch_size = config["batch_size"])
+    trainset, valset, _ , features = dataloaders_img(target_column = target, train_frac = 0.7, val_frac = 0.2, batch_size = config["batch_size"],
+                                                     root_dir= root_dir=, data_dir=data_dir=)
 
     model = make_model(config, features.shape[-1])
 
