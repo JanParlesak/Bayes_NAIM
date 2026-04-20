@@ -1,6 +1,6 @@
 from modules import *
 from helpers import *
-from diffae_med import *
+from diffae import *
 from metrics import * 
 from helpers_data import *
 
