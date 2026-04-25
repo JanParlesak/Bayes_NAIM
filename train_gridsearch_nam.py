@@ -81,7 +81,6 @@ def main(config, gpus_per_trial=1):
         ),
         run_config=tune.RunConfig(
             name="experiment_nam",
-            storage_path="/user/jan.parlesak/u24266/repos/Bayes_Image_NAM/test_results",
             checkpoint_config=tune.CheckpointConfig(num_to_keep=1, checkpoint_score_attribute="AUC_PR",
                 checkpoint_score_order='max', checkpoint_at_end=False),
         ),
@@ -98,7 +97,7 @@ def main(config, gpus_per_trial=1):
     #get_test_predictions(best_result)
 
 
-
+# recommended to run these individually due to storage 
 
 main(config_last_status, gpus_per_trial=1 if torch.cuda.is_available() else 0)
 main(config_was_ventilated, gpus_per_trial=1 if torch.cuda.is_available() else 0)

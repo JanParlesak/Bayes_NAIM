@@ -83,7 +83,6 @@ def main(config, gpus_per_trial=1):
         ),
         run_config=tune.RunConfig(
             name="experiment",
-            storage_path="/user/jan.parlesak/u24266/repos/Bayes_Image_NAM/test_results",
             checkpoint_config=tune.CheckpointConfig(num_to_keep=1, checkpoint_score_attribute="AUC_PR",
                 checkpoint_score_order='max', checkpoint_at_end=False),
         ),
@@ -97,7 +96,7 @@ def main(config, gpus_per_trial=1):
     print(f"Best trial config: {best_result.config}")
     print(f"Best AUC_PR: {best_result.metrics['AUC_PR']}, Best AUC: {best_result.metrics['AUC']}, Best Accuracy: {best_result.metrics['Balanced Accuracy']}, Best Recall: {best_result.metrics['val_recall']}, Best Precision: {best_result.metrics['val_precision']}")
     
-    get_test_predictions(best_result)
+    #get_test_predictions(best_result)
 
 
 

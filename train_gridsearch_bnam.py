@@ -82,7 +82,6 @@ def main(config, gpus_per_trial=1):
         ),
         run_config=tune.RunConfig(
             name="experiment_bnam",
-            storage_path="/user/jan.parlesak/u24266/repos/Bayes_Image_NAM/test_results",
             checkpoint_config=tune.CheckpointConfig(num_to_keep=1, checkpoint_score_attribute="AUC_PR",
                 checkpoint_score_order='max', checkpoint_at_end=False),
         ),
