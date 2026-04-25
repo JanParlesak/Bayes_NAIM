@@ -15,7 +15,7 @@ import torch as th
 from diffae.model import *
 from diffae.model.nn import mean_flat
 from typing import NamedTuple, Tuple
-from choices import *
+from diffae.choices import *
 from torch.cuda.amp import autocast
 import torch.nn.functional as F
 
