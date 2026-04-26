@@ -99,7 +99,7 @@ def main(config, gpus_per_trial=1):
     #get_test_predictions(best_result)
 
 
-
+# recommended to run these individually due to storage 
 
 main(config_last_status, gpus_per_trial=1 if torch.cuda.is_available() else 0)
 main(config_was_ventilated, gpus_per_trial=1 if torch.cuda.is_available() else 0)
